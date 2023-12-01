@@ -13,7 +13,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"name\": \"You'll learn how to build a CRUD API with FastAPI\",\r\n    \"content\": \"Fastapi is really easy to use\",\r\n    \"category\": \"FastAPI\"\r\n}",
+					"raw": "{\r\n    \"item_name\": \"You'll learn how to build a CRUD API with FastAPI\",\r\n    \"content\": \"Fastapi is really easy to use\",\r\n    \"category\": \"FastAPI\"\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -52,36 +52,6 @@
 						"api",
 						"items",
 						"cc5ff528-5352-4ba3-9b75-962dc5dacf2f"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Update  Item",
-			"request": {
-				"method": "PATCH",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\r\n    \"name\": \"✅✅👇👇 rust test\"\r\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "http://localhost:8000/api/items/77a9ac3c-7e3b-40c1-b2d4-30729c931d3d",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "8000",
-					"path": [
-						"api",
-						"items",
-						"77a9ac3c-7e3b-40c1-b2d4-30729c931d3d"
 					]
 				}
 			},

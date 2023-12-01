@@ -7,7 +7,7 @@ use axum::{
 
 use crate::{
     handler::{
-        create_item_handler, delete_item_handler, edit_item_handler, get_item_handler, item_list_handler
+        create_item_handler, delete_item_handler, get_item_handler, item_list_handler
     },
     AppState,
 };
@@ -19,7 +19,6 @@ pub fn create_router(app_state: Arc<AppState>) -> Router {
         .route(
             "/api/items/:id",
             get(get_item_handler)
-                .patch(edit_item_handler)
                 .delete(delete_item_handler),
         )
 

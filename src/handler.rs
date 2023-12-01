@@ -10,7 +10,7 @@ use serde_json::json;
 
 use crate::{
     model::{ItemModel, ItemModelResponse},
-    schema::{CreateItemSchema, FilterOptions, UpdateItemSchema},
+    schema::{CreateItemSchema, FilterOptions},
     AppState,
 };
 
@@ -72,9 +72,9 @@ pub async fn create_item_handler(
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let user_id = uuid::Uuid::new_v4().to_string();
     let query_result =
-        sqlx::query(r#"INSERT INTO items (id,name,table_number,preparation_time_minutes) VALUES (?, ?, ?, ?)"#)
+        sqlx::query(r#"INSERT INTO items (id,item_name,table_number,preparation_time_minutes) VALUES (?, ?, ?, ?)"#)
             .bind(user_id.clone())
-            .bind(body.name.to_string())
+            .bind(body.item_name.to_string())
             .bind(body.table_number)
             .bind(body.preparation_time_minutes.to_string())
             .execute(&data.db)
@@ -85,7 +85,7 @@ pub async fn create_item_handler(
         if err.contains("Duplicate entry") {
             let error_response = serde_json::json!({
                 "status": "fail",
-                "message": "Item with that name already exists",
+                "message": "Item with that item_name already exists",
             });
             return Err((StatusCode::CONFLICT, Json(error_response)));
         }
@@ -149,85 +149,6 @@ pub async fn get_item_handler(
     };
 }
 
-pub async fn edit_item_handler(
-    Path(id): Path<uuid::Uuid>,
-    State(data): State<Arc<AppState>>,
-    Json(body): Json<UpdateItemSchema>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    let query_result = sqlx::query_as!(
-        ItemModel,
-        r#"SELECT * FROM items WHERE id = ?"#,
-        id.to_string()
-    )
-        .fetch_one(&data.db)
-        .await;
-
-    let item = match query_result {
-        Ok(item) => item,
-        Err(sqlx::Error::RowNotFound) => {
-            let error_response = serde_json::json!({
-                "status": "fail",
-                "message": format!("Item with ID: {} not found", id)
-            });
-            return Err((StatusCode::NOT_FOUND, Json(error_response)));
-        }
-        Err(e) => {
-            return Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"status": "error","message": format!("{:?}", e)})),
-            ));
-        }
-    };
-
-
-    let update_result = sqlx::query(
-        r#"UPDATE items SET name = ?, table_number = ?, preparation_time_minutes = ? WHERE id = ?"#,
-    )
-        .bind(body.name.to_owned().unwrap_or_else(|| item.name.clone()))
-        .bind(
-            body.table_number
-        )
-        .bind(
-            body.preparation_time_minutes
-        )
-        .bind(id.to_string())
-        .execute(&data.db)
-        .await
-        .map_err(|e| {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"status": "error","message": format!("{:?}", e)})),
-            )
-        })?;
-
-    if update_result.rows_affected() == 0 {
-        let error_response = serde_json::json!({
-            "status": "fail",
-            "message": format!("Item with ID: {} not found", id)
-        });
-        return Err((StatusCode::NOT_FOUND, Json(error_response)));
-    }
-
-    let updated_item = sqlx::query_as!(
-        ItemModel,
-        r#"SELECT * FROM items WHERE id = ?"#,
-        id.to_string()
-    )
-        .fetch_one(&data.db)
-        .await
-        .map_err(|e| {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"status": "error","message": format!("{:?}", e)})),
-            )
-        })?;
-
-    let item_response = serde_json::json!({"status": "success","data": serde_json::json!({
-        "item": filter_db_record(&updated_item)
-    })});
-
-    Ok(Json(item_response))
-}
 
 pub async fn delete_item_handler(
     Path(id): Path<uuid::Uuid>,
@@ -257,7 +178,7 @@ pub async fn delete_item_handler(
 fn filter_db_record(item: &ItemModel) -> ItemModelResponse {
     ItemModelResponse {
         id: item.id.to_owned(),
-        name: item.name.to_owned(),
+        item_name: item.item_name.to_owned(),
         table_number: item.table_number.to_owned(),
         preparation_time_minutes: item.preparation_time_minutes.to_owned(),
         created_at: item.created_at.unwrap(),
