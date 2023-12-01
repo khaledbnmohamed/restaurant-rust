@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 #[allow(non_snake_case)]
 pub struct ItemModel {
     pub id: String,
-    pub title: String,
+    pub name: String,
     pub table_number: String,
     pub preparation_time_minutes: i32,
     pub created_at: Option<chrono::DateTime<chrono::Utc>>,
@@ -14,7 +14,7 @@ pub struct ItemModel {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ItemModelResponse {
     pub id: String,
-    pub title: String,
+    pub name: String,
     pub table_number: String,
     pub preparation_time_minutes: i32,
     pub created_at: chrono::DateTime<chrono::Utc>,

@@ -14,14 +14,14 @@ pub struct ParamOptions {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct CreateItemSchema {
-    pub title: String,
+    pub name: String,
     pub table_number: Option<String>,
     pub preparation_time_minutes: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct UpdateItemSchema {
-    pub title: Option<String>,
+    pub name: Option<String>,
     pub table_number: Option<String>,
     pub preparation_time_minutes: Option<String>
 }

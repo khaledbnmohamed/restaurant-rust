@@ -72,9 +72,9 @@ pub async fn create_item_handler(
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let user_id = uuid::Uuid::new_v4().to_string();
     let query_result =
-        sqlx::query(r#"INSERT INTO items (id,title,table_number,preparation_time_minutes) VALUES (?, ?, ?, ?)"#)
+        sqlx::query(r#"INSERT INTO items (id,name,table_number,preparation_time_minutes) VALUES (?, ?, ?, ?)"#)
             .bind(user_id.clone())
-            .bind(body.title.to_string())
+            .bind(body.name.to_string())
             .bind(body.table_number)
             .bind(body.preparation_time_minutes.to_string())
             .execute(&data.db)
@@ -85,7 +85,7 @@ pub async fn create_item_handler(
         if err.contains("Duplicate entry") {
             let error_response = serde_json::json!({
                 "status": "fail",
-                "message": "Item with that title already exists",
+                "message": "Item with that name already exists",
             });
             return Err((StatusCode::CONFLICT, Json(error_response)));
         }
@@ -181,9 +181,9 @@ pub async fn edit_item_handler(
 
 
     let update_result = sqlx::query(
-        r#"UPDATE items SET title = ?, table_number = ?, preparation_time_minutes = ? WHERE id = ?"#,
+        r#"UPDATE items SET name = ?, table_number = ?, preparation_time_minutes = ? WHERE id = ?"#,
     )
-        .bind(body.title.to_owned().unwrap_or_else(|| item.title.clone()))
+        .bind(body.name.to_owned().unwrap_or_else(|| item.name.clone()))
         .bind(
             body.table_number
         )
@@ -257,7 +257,7 @@ pub async fn delete_item_handler(
 fn filter_db_record(item: &ItemModel) -> ItemModelResponse {
     ItemModelResponse {
         id: item.id.to_owned(),
-        title: item.title.to_owned(),
+        name: item.name.to_owned(),
         table_number: item.table_number.to_owned(),
         preparation_time_minutes: item.preparation_time_minutes.to_owned(),
         created_at: item.created_at.unwrap(),

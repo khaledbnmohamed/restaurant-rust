@@ -1,9 +1,9 @@
 {
 	"info": {
-		"_postman_id": "5a0ef1af-7659-43bc-8ecb-aeffd04c6a6c",
+		"_postman_id": "6679552c-e183-4040-8def-811300e43f69",
 		"name": "Item App",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "14791724"
+		"_exporter_id": "6487094"
 	},
 	"item": [
 		{
@@ -13,7 +13,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"title\": \"You'll learn how to build a CRUD API with FastAPI\",\r\n    \"table_number\": \"Fastapi is really easy to use\",\r\n    \"preparation_time_minutes\": \"FastAPI\"\r\n}",
+					"raw": "{\r\n    \"name\": \"You'll learn how to build a CRUD API with FastAPI\",\r\n    \"content\": \"Fastapi is really easy to use\",\r\n    \"category\": \"FastAPI\"\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -64,7 +64,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"title\": \"✅✅👇👇This article will teach Django REST framework\"\r\n}",
+					"raw": "{\r\n    \"name\": \"✅✅👇👇This article will teach Django REST framework\"\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -114,7 +114,7 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:8000/api/items?page=1&limit=10",
+					"raw": "http://localhost:8000/api/items?page=1&limit=3&table_number=5",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -131,7 +131,11 @@
 						},
 						{
 							"key": "limit",
-							"value": "10"
+							"value": "3"
+						},
+						{
+							"key": "table_number",
+							"value": "5"
 						}
 					]
 				}
