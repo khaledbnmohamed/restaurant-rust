@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "6679552c-e183-4040-8def-811300e43f69",
+		"_postman_id": "a857c43e-279b-4c82-a9ed-a0d154afd502",
 		"name": "Item App",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "6487094"
@@ -13,7 +13,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"item_name\": \"You'll learn how to build a CRUD API with FastAPI\",\r\n    \"content\": \"Fastapi is really easy to use\",\r\n    \"category\": \"FastAPI\"\r\n}",
+					"raw": "{\r\n    \"item_name\": \"You'll learn how to build a CRUD API with FastAPI\",\r\n    \"preparation_time_minutes\": \"5\",\r\n    \"table_number\": \"5\"\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -63,7 +63,7 @@
 				"method": "DELETE",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:8000/api/items/04aae95f-de90-4a39-9610-83b84485a042",
+					"raw": "http://localhost:8000/api/items/7d1fa4cf-580f-4e75-bcbd-9a6e80cc6233",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -72,7 +72,7 @@
 					"path": [
 						"api",
 						"items",
-						"04aae95f-de90-4a39-9610-83b84485a042"
+						"7d1fa4cf-580f-4e75-bcbd-9a6e80cc6233"
 					]
 				}
 			},
@@ -84,7 +84,7 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:8000/api/items?page=1&limit=3&table_number=5",
+					"raw": "http://localhost:8000/api/items?table_number=5",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -97,15 +97,51 @@
 					"query": [
 						{
 							"key": "page",
-							"value": "1"
+							"value": "1",
+							"disabled": true
 						},
 						{
 							"key": "limit",
-							"value": "3"
+							"value": "3",
+							"disabled": true
 						},
 						{
 							"key": "table_number",
 							"value": "5"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get All  Items in certain table",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8000/api/tables/5/items",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"tables",
+						"5",
+						"items"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "1",
+							"disabled": true
+						},
+						{
+							"key": "limit",
+							"value": "3",
+							"disabled": true
 						}
 					]
 				}

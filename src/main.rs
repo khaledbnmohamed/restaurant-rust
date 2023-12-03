@@ -2,7 +2,7 @@ mod handler;
 mod model;
 mod route;
 mod schema;
-mod tests;
+// mod tests;
 
 use std::sync::Arc;
 

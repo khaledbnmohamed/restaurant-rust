@@ -14,6 +14,36 @@ use crate::{
     AppState,
 };
 
+pub async fn get_items_for_table_handler(
+    Path(table_number): Path<String>, // Extract the table number from the path
+    Query(opts): Query<FilterOptions>,
+    State(data): State<Arc<AppState>>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+
+    let items = sqlx::query_as!(ItemModel, "SELECT * FROM items WHERE table_number = ?", table_number.to_string())
+        .fetch_all(&data.db)
+        .await
+        .map_err(|e| {
+            let error_response = serde_json::json!({
+                "status": "fail",
+                "message": format!("Database error: {}", e),
+            });
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        })?;
+
+    let item_responses = items
+        .iter()
+        .map(|item| filter_db_record(&item))
+        .collect::<Vec<ItemModelResponse>>();
+
+    let json_response = serde_json::json!({
+        "status": "success",
+        "results": item_responses.len(),
+        "items": item_responses
+    });
+
+    Ok(Json(json_response))
+}
 pub async fn item_list_handler(
     opts: Option<Query<FilterOptions>>,
     State(data): State<Arc<AppState>>,
@@ -127,14 +157,14 @@ pub async fn get_item_handler(
 
     match query_result {
         Ok(item) => {
-            let item_response = serde_json::json!({"status": "success","data": serde_json::json!({
+            let item_response = json!({"status": "success","data": serde_json::json!({
                 "item": filter_db_record(&item)
             })});
 
             return Ok(Json(item_response));
         }
         Err(sqlx::Error::RowNotFound) => {
-            let error_response = serde_json::json!({
+            let error_response = json!({
                 "status": "fail",
                 "message": format!("Item with ID: {} not found", id)
             });
