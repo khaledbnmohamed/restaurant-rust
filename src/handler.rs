@@ -1,217 +1,94 @@
-use std::sync::Arc;
+use crate::items_handler::{add_item, get_all, get_item, remove_item};
+use crate::model::{RequestHandler, RequestMethod};
+use super::restaurant::Restaurant;
 
-use axum::{
-    extract::{Path, Query, State},
-    http::StatusCode,
-    response::IntoResponse,
-    Json,
-};
-use serde_json::json;
-
-use crate::{
-    model::{ItemModel, ItemModelResponse},
-    schema::{CreateItemSchema, FilterOptions},
-    AppState,
-};
-
-pub async fn get_items_for_table_handler(
-    Path(table_number): Path<String>, // Extract the table number from the path
-    Query(opts): Query<FilterOptions>,
-    State(data): State<Arc<AppState>>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-
-    let items = sqlx::query_as!(ItemModel, "SELECT * FROM items WHERE table_number = ?", table_number.to_string())
-        .fetch_all(&data.db)
-        .await
-        .map_err(|e| {
-            let error_response = serde_json::json!({
-                "status": "fail",
-                "message": format!("Database error: {}", e),
-            });
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
-
-    let item_responses = items
-        .iter()
-        .map(|item| filter_db_record(&item))
-        .collect::<Vec<ItemModelResponse>>();
-
-    let json_response = serde_json::json!({
-        "status": "success",
-        "results": item_responses.len(),
-        "items": item_responses
-    });
-
-    Ok(Json(json_response))
+pub fn parse_method(s: &str) -> RequestMethod {
+    match s {
+        "GET" => RequestMethod::Get,
+        "POST" => RequestMethod::Post,
+        "DELETE" => RequestMethod::Delete,
+        "PUT" => RequestMethod::Put,
+        _ => RequestMethod::Unknown,
+    }
 }
-pub async fn item_list_handler(
-    opts: Option<Query<FilterOptions>>,
-    State(data): State<Arc<AppState>>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    let Query(opts) = opts.unwrap_or_default();
 
-    let limit = opts.limit.unwrap_or(10);
-    let offset = (opts.page.unwrap_or(1) - 1) * limit;
-    let table_number = opts.table_number;
+pub fn parse_handler(s: &str) -> (RequestHandler, Vec<&str>) {
+    let handler_vec: Vec<&str> = s.split('/').collect();
 
-    let items = if let Some(table_number) = table_number {
-        sqlx::query_as!(
-            ItemModel,
-            r#"SELECT * FROM items WHERE table_number = ? ORDER by id LIMIT ? OFFSET ?"#,
-            table_number,
-            limit as i32,
-            offset as i32
-        )
-            .fetch_all(&data.db)
-            .await
+    if handler_vec.len() < 2 {
+        return (RequestHandler::Unknown, vec![]);
+    }
+
+    let handler_param = if handler_vec.len() > 2 {
+        handler_vec[2..].to_vec()
     } else {
-        sqlx::query_as!(
-            ItemModel,
-            r#"SELECT * FROM items ORDER by id LIMIT ? OFFSET ?"#,
-            limit as i32,
-            offset as i32
-        )
-            .fetch_all(&data.db)
-            .await
-    }
-        .map_err(|e| {
-            let error_response = serde_json::json!({
-            "status": "fail",
-            "message": format!("Database error: {}", e),
-        });
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
-        })?;
-
-    let item_responses = items
-        .iter()
-        .map(|item| filter_db_record(&item))
-        .collect::<Vec<ItemModelResponse>>();
-
-    let json_response = serde_json::json!({
-        "status": "success",
-        "results": item_responses.len(),
-        "items": item_responses
-    });
-
-    Ok(Json(json_response))
-}
-
-pub async fn create_item_handler(
-    State(data): State<Arc<AppState>>,
-    Json(body): Json<CreateItemSchema>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    let user_id = uuid::Uuid::new_v4().to_string();
-    let query_result =
-        sqlx::query(r#"INSERT INTO items (id,item_name,table_number,preparation_time_minutes) VALUES (?, ?, ?, ?)"#)
-            .bind(user_id.clone())
-            .bind(body.item_name.to_string())
-            .bind(body.table_number)
-            .bind(body.preparation_time_minutes.to_string())
-            .execute(&data.db)
-            .await
-            .map_err(|err: sqlx::Error| err.to_string());
-
-    if let Err(err) = query_result {
-        if err.contains("Duplicate entry") {
-            let error_response = serde_json::json!({
-                "status": "fail",
-                "message": "Item with that item_name already exists",
-            });
-            return Err((StatusCode::CONFLICT, Json(error_response)));
-        }
-
-        return Err((
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({"status": "error","message": format!("{:?}", err)})),
-        ));
-    }
-
-    let item = sqlx::query_as!(ItemModel, r#"SELECT * FROM items WHERE id = ?"#, user_id)
-        .fetch_one(&data.db)
-        .await
-        .map_err(|e| {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"status": "error","message": format!("{:?}", e)})),
-            )
-        })?;
-
-    let item_response = serde_json::json!({"status": "success","data": serde_json::json!({
-        "item": filter_db_record(&item)
-    })});
-
-    Ok(Json(item_response))
-}
-
-pub async fn get_item_handler(
-    Path(id): Path<uuid::Uuid>,
-    State(data): State<Arc<AppState>>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    let query_result = sqlx::query_as!(
-        ItemModel,
-        r#"SELECT * FROM items WHERE id = ?"#,
-        id.to_string()
-    )
-        .fetch_one(&data.db)
-        .await;
-
-    match query_result {
-        Ok(item) => {
-            let item_response = json!({"status": "success","data": serde_json::json!({
-                "item": filter_db_record(&item)
-            })});
-
-            return Ok(Json(item_response));
-        }
-        Err(sqlx::Error::RowNotFound) => {
-            let error_response = json!({
-                "status": "fail",
-                "message": format!("Item with ID: {} not found", id)
-            });
-            return Err((StatusCode::NOT_FOUND, Json(error_response)));
-        }
-        Err(e) => {
-            return Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"status": "error","message": format!("{:?}", e)})),
-            ));
-        }
+        vec![]
     };
+
+    match handler_vec[1] {
+        "add" => (RequestHandler::Add, handler_param),
+        "remove" => (RequestHandler::Remove, handler_param),
+        "get" => (RequestHandler::Get, handler_param),
+        _ => (RequestHandler::Unknown, vec![]),
+    }
 }
 
+pub fn request_parser(req: &mut [u8], restaurant: Restaurant) -> String {
+    let req_str = std::str::from_utf8(req).unwrap();
+    println!("Request: {}", req_str);
 
-pub async fn delete_item_handler(
-    Path(id): Path<uuid::Uuid>,
-    State(data): State<Arc<AppState>>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    let query_result = sqlx::query!(r#"DELETE FROM items WHERE id = ?"#, id.to_string())
-        .execute(&data.db)
-        .await
-        .map_err(|e| {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"status": "error","message": format!("{:?}", e)})),
-            )
-        })?;
+    let req_vec: Vec<&str> = req_str.split(' ').collect();
 
-    if query_result.rows_affected() == 0 {
-        let error_response = serde_json::json!({
-            "status": "fail",
-            "message": format!("Item with ID: {} not found", id)
-        });
-        return Err((StatusCode::NOT_FOUND, Json(error_response)));
+    if req_vec.len() < 2 {
+        return "some error".to_string();
     }
 
-    Ok(StatusCode::NO_CONTENT)
-}
+    let method = parse_method(req_vec[0]);
+    let (handler, handler_param) = parse_handler(req_vec[1]);
 
-fn filter_db_record(item: &ItemModel) -> ItemModelResponse {
-    ItemModelResponse {
-        id: item.id.to_owned(),
-        item_name: item.item_name.to_owned(),
-        table_number: item.table_number.to_owned(),
-        preparation_time_minutes: item.preparation_time_minutes.to_owned(),
-        created_at: item.created_at.unwrap(),
-        updated_at: item.updated_at.unwrap(),
+    match method {
+        RequestMethod::Get => match handler {
+            RequestHandler::Get => match handler_param.len() {
+                1 => {
+                    let tid: u32 = handler_param[0].parse().unwrap();
+                    return get_all(tid, restaurant);
+                }
+                2 => {
+                    let tid: u32 = handler_param[0].parse().unwrap();
+                    let iid: u32 = handler_param[1].parse().unwrap();
+                    return get_item(tid, iid, restaurant);
+                }
+                _ => return "wrong handler".to_string(),
+            },
+            _ => {}
+        },
+        RequestMethod::Post => match handler {
+            RequestHandler::Add => match handler_param.len() {
+                2 => {
+                    let tid: u32 = handler_param[0].parse().unwrap();
+                    let item_data: &str = handler_param[1];
+                    return add_item(tid, item_data, restaurant);
+                }
+                _ => return "wrong handler".to_string(),
+            },
+            _ => {}
+        },
+        RequestMethod::Delete => match handler {
+            RequestHandler::Remove => match handler_param.len() {
+                2 => {
+                    let tid: u32 = handler_param[0].parse().unwrap();
+                    let iid: u32 = handler_param[1].parse().unwrap();
+                    return remove_item(tid, iid, restaurant);
+                }
+                _ => return "wrong handler".to_string(),
+            },
+            _ => {}
+        },
+        RequestMethod::Put => {}
+        _ => {
+            return "unknown method".to_string();
+        }
     }
+
+    "unknown request".to_string()
 }

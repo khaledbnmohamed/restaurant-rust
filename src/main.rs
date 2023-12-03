@@ -1,56 +1,51 @@
+use std::env;
+use std::error::Error;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::TcpListener;
+
 mod handler;
+mod item;
+mod restaurant;
 mod model;
-mod route;
-mod schema;
-// mod tests;
+mod table;
 
-use std::sync::Arc;
+mod main_tests;
+mod restaurants_tests;
+mod table_test;
+mod item_tests;
+mod items_handler_tests;
+mod items_handler;
 
-use axum::http::{
-    header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE},
-    HeaderValue, Method,
-};
-use dotenv::dotenv;
-use route::create_router;
-use tower_http::cors::CorsLayer;
-
-use sqlx::mysql::{MySqlPool, MySqlPoolOptions};
-
-pub struct AppState {
-    db: MySqlPool,
-}
+use restaurant::Restaurant;
+use crate::handler::request_parser;
 
 #[tokio::main]
-async fn main() {
-    dotenv().ok();
+async fn main() -> Result<(), Box<dyn Error>> {
+    let addr = env::args().nth(1).unwrap_or_else(|| "127.0.0.1:8080".to_string());
 
-    let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    let pool = match MySqlPoolOptions::new()
-        .max_connections(10)
-        .connect(&database_url)
-        .await
-    {
-        Ok(pool) => {
-            println!("✅Connection to the database is successful!");
-            pool
-        }
-        Err(err) => {
-            println!("🔥 Failed to connect to the database: {:?}", err);
-            std::process::exit(1);
-        }
-    };
+    let listener = TcpListener::bind(&addr).await?;
+    println!("Server is now running 🚀🚀 at  {}", addr);
 
-    let cors = CorsLayer::new()
-        .allow_origin("http://localhost:3000".parse::<HeaderValue>().unwrap())
-        .allow_methods([Method::GET, Method::POST, Method::PATCH, Method::DELETE])
-        .allow_credentials(true)
-        .allow_headers([AUTHORIZATION, ACCEPT, CONTENT_TYPE]);
+    let restaurant = Restaurant::new(200);
 
-    let app = create_router(Arc::new(AppState { db: pool.clone() })).layer(cors);
+    loop {
+        let (mut socket, _) = listener.accept().await?;
 
-    println!("🚀 Server started successfully");
-    axum::Server::bind(&"0.0.0.0:8000".parse().unwrap())
-        .serve(app.into_make_service())
-        .await
-        .unwrap();
+        let restaurant = restaurant.clone();
+
+        tokio::spawn(async move {
+            let mut buf = vec![0; 1024];
+            while let Ok(n) = socket.read(&mut buf).await {
+                if n == 0 {
+                    return;
+                }
+
+                let response = request_parser(&mut buf[0..n], restaurant.clone());
+
+                if let Err(e) = socket.write_all(response.as_bytes()).await {
+                    eprintln!("Failed to write data to socket: {}", e);
+                }
+            }
+        });
+    }
 }
