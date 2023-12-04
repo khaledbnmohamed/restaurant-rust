@@ -19,7 +19,7 @@ mod tests {
     fn test_parse_handler() -> Result<(), String> {
         assert_eq!(parse_handler("/add/xxx"), (RequestHandler::Add, vec!["xxx"]));
         assert_eq!(parse_handler("/get/xxx"), (RequestHandler::Get, vec!["xxx"]));
-        assert_eq!(parse_handler("/remove/xxx"), (RequestHandler::Remove, vec!["xxx"]));
+        assert_eq!(parse_handler("/delete/xxx"), (RequestHandler::Remove, vec!["xxx"]));
         assert_eq!(
             parse_handler("/add/xxx/yyy"),
             (RequestHandler::Add, vec!["xxx", "yyy"])
@@ -35,7 +35,7 @@ mod tests {
         Ok(())
     }
 
-    fn get_restaruant_ready(desire_table_number: u32, add_amount: usize) -> Restaurant {
+    fn get_restaurant_ready(desired_table_number: u32, add_amount: usize) -> Restaurant {
         let restaurant = Restaurant::new(200);
 
         let mut handles = vec![];
@@ -43,8 +43,8 @@ mod tests {
         for test_id in 0..add_amount {
             let restaurant = restaurant.clone();
 
-            let req = format!("POST /add/{}/{}", desire_table_number, test_id);
-            let mut bytes: Vec<u8> = req.as_bytes().to_vec();
+            let req = format!("POST /add/{}/{}", desired_table_number, test_id);
+            let mut bytes: Vec<u8> = req.into_bytes();
 
             let handle = thread::spawn(move || {
                 let _res = request_parser(&mut bytes, restaurant.clone());
@@ -52,6 +52,7 @@ mod tests {
 
             handles.push(handle);
         }
+
         for handle in handles {
             handle.join().unwrap();
         }
@@ -61,11 +62,11 @@ mod tests {
 
     #[test]
     fn integration_test_add_item() -> Result<(), String> {
-        let desire_table_number = 0;
+        let desired_table_number = 0;
         let add_amount = 100;
-        let restaurant = get_restaruant_ready(desire_table_number, add_amount);
+        let restaurant = get_restaurant_ready(desired_table_number, add_amount);
 
-        let t = restaurant.get_table(desire_table_number);
+        let t = restaurant.get_table(desired_table_number);
         let len = t.lock().unwrap().items_size();
         assert_eq!(len, add_amount);
 
@@ -73,51 +74,51 @@ mod tests {
     }
 
     #[test]
-    fn integration_test_remove_item() -> Result<(), String> {
-        let desire_table_number = 0;
+    fn integration_test_delete_item() -> Result<(), String> {
+        let desired_table_number = 0;
         let add_amount = 100;
-        let remove_amount = 76;
-        let restaurant = get_restaruant_ready(desire_table_number, add_amount);
+        let delete_amount = 76;
+        let restaurant = get_restaurant_ready(desired_table_number, add_amount);
 
         let mut handles = vec![];
 
-        for test_id in 0..remove_amount {
+        for test_id in 0..delete_amount {
             let restaurant = restaurant.clone();
 
-            let req = format!("DELETE /remove/{}/{}", desire_table_number, test_id);
-            let mut bytes: Vec<u8> = req.as_bytes().to_vec();
+            let req = format!("DELETE /delete/{}/{}", desired_table_number, test_id);
+            let mut bytes: Vec<u8> = req.into_bytes();
 
             let handle = thread::spawn(move || {
                 let _res = request_parser(&mut bytes, restaurant.clone());
-                println!("{}", _res);
             });
 
             handles.push(handle);
         }
+
         for handle in handles {
             handle.join().unwrap();
         }
 
-        let t = restaurant.get_table(desire_table_number);
+        let t = restaurant.get_table(desired_table_number);
         let len = t.lock().unwrap().items_size();
-        assert_eq!(len, add_amount - remove_amount);
+        assert_eq!(len, add_amount - delete_amount);
 
         Ok(())
     }
 
     #[test]
     fn integration_test_check_item() -> Result<(), String> {
-        let desire_table_number = 0;
+        let desired_table_number = 0;
         let add_amount = 20;
-        let restaurant = get_restaruant_ready(desire_table_number, add_amount);
+        let restaurant = get_restaurant_ready(desired_table_number, add_amount);
 
         let mut handles = vec![];
 
         for test_id in 0..add_amount {
             let restaurant = restaurant.clone();
 
-            let req = format!("GET /get/{}/{}", desire_table_number, test_id);
-            let mut bytes: Vec<u8> = req.as_bytes().to_vec();
+            let req = format!("GET /get/{}/{}", desired_table_number, test_id);
+            let mut bytes: Vec<u8> = req.into_bytes();
 
             let handle = thread::spawn(move || {
                 let res = request_parser(&mut bytes, restaurant.clone());
@@ -127,6 +128,7 @@ mod tests {
 
             handles.push(handle);
         }
+
         for handle in handles {
             handle.join().unwrap();
         }
@@ -136,26 +138,26 @@ mod tests {
 
     #[test]
     fn integration_test_check_all_item() -> Result<(), String> {
-        let desire_table_number = 0;
+        let desired_table_number = 0;
         let add_amount = 20;
-        let remove_amount = 17;
-        let restaurant = get_restaruant_ready(desire_table_number, add_amount);
+        let delete_amount = 17;
+        let restaurant = get_restaurant_ready(desired_table_number, add_amount);
 
         let mut handles = vec![];
 
-        for test_id in 0..remove_amount {
+        for test_id in 0..delete_amount {
             let restaurant = restaurant.clone();
 
-            let req = format!("DELETE /remove/{}/{}", desire_table_number, test_id);
-            let mut bytes: Vec<u8> = req.as_bytes().to_vec();
+            let req = format!("DELETE /delete/{}/{}", desired_table_number, test_id);
+            let mut bytes: Vec<u8> = req.into_bytes();
 
             let handle = thread::spawn(move || {
                 let _res = request_parser(&mut bytes, restaurant.clone());
-                println!("{}", _res);
             });
 
             handles.push(handle);
         }
+
         for handle in handles {
             handle.join().unwrap();
         }
@@ -163,8 +165,8 @@ mod tests {
         {
             let restaurant = restaurant.clone();
 
-            let req = format!("GET /get/{}", desire_table_number);
-            let mut bytes: Vec<u8> = req.as_bytes().to_vec();
+            let req = format!("GET /get/{}", desired_table_number);
+            let mut bytes: Vec<u8> = req.into_bytes();
 
             let _ = thread::spawn(move || {
                 let res = request_parser(&mut bytes, restaurant.clone());

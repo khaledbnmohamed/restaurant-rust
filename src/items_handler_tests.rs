@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::items_handler::{add_item, get_all, get_item, remove_item};
+    use crate::items_handler::{add_item, get_all, get_item, delete_item};
     use crate::restaurant::Restaurant;
 
     fn create_restaurant(table_n: usize, item_n: usize) -> Restaurant {
@@ -15,9 +15,7 @@ mod tests {
     #[test]
     fn test_api_get_all() {
         let r = create_restaurant(1, 2);
-
         let output = get_all(0, r);
-
         assert!(output.contains("\"item_id\": 0"));
         assert!(output.contains("\"item_id\": 1"));
     }
@@ -35,7 +33,7 @@ mod tests {
     }
 
     #[test]
-    fn test_api_remove_item() {
+    fn test_api_delete_item() {
         let item_amount = 5;
         let item_id = 1;
 
@@ -43,7 +41,7 @@ mod tests {
         let r2 = r.clone();
         let r3 = r.clone();
 
-        let output = remove_item(0, item_id, r);
+        let output = delete_item(0, item_id, r);
         assert!(output.contains("success"));
 
         assert_eq!(
@@ -51,8 +49,8 @@ mod tests {
             item_amount - 1
         );
 
-        let output2 = remove_item(0, item_id, r3);
-        assert!(output2.contains("cannot remove"));
+        let output2 = delete_item(0, item_id, r3);
+        assert!(output2.contains("error deleting item"));
     }
 
     #[test]

@@ -37,16 +37,16 @@ impl Table {
         self.items.get(&item_id)
     }
 
-    pub fn remove_item(&mut self, item_id: u32) -> Option<Item> {
+    pub fn delete_item(&mut self, item_id: u32) -> Option<Item> {
         self.items.remove(&item_id)
     }
 
-    pub fn print_item(&self, item_id: u32) -> String {
+    pub fn serialize(&self, item_id: u32) -> String {
         self.check_item(item_id)
             .map_or_else(|| "{\"msg\": \"not found\"}".to_owned(), |item| item.print())
     }
 
-    pub fn print_items(&self) -> String {
+    pub fn serializes(&self) -> String {
         let items_str: Vec<String> = self.items.values().map(Item::print).collect();
         format!("[{}]", items_str.join(", "))
     }

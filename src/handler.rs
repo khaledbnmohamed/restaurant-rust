@@ -1,4 +1,4 @@
-use crate::items_handler::{add_item, get_all, get_item, remove_item};
+use crate::items_handler::{add_item, get_all, get_item, delete_item};
 use crate::model::{RequestHandler, RequestMethod};
 use super::restaurant::Restaurant;
 
@@ -27,7 +27,7 @@ pub fn parse_handler(s: &str) -> (RequestHandler, Vec<&str>) {
 
     match handler_vec[1] {
         "add" => (RequestHandler::Add, handler_param),
-        "remove" => (RequestHandler::Remove, handler_param),
+        "delete" => (RequestHandler::Remove, handler_param),
         "get" => (RequestHandler::Get, handler_param),
         _ => (RequestHandler::Unknown, vec![]),
     }
@@ -50,13 +50,13 @@ pub fn request_parser(req: &mut [u8], restaurant: Restaurant) -> String {
         RequestMethod::Get => match handler {
             RequestHandler::Get => match handler_param.len() {
                 1 => {
-                    let tid: u32 = handler_param[0].parse().unwrap();
-                    return get_all(tid, restaurant);
+                    let table_number: u32 = handler_param[0].parse().unwrap();
+                    return get_all(table_number, restaurant);
                 }
                 2 => {
-                    let tid: u32 = handler_param[0].parse().unwrap();
+                    let table_number: u32 = handler_param[0].parse().unwrap();
                     let iid: u32 = handler_param[1].parse().unwrap();
-                    return get_item(tid, iid, restaurant);
+                    return get_item(table_number, iid, restaurant);
                 }
                 _ => return "wrong handler".to_string(),
             },
@@ -65,9 +65,9 @@ pub fn request_parser(req: &mut [u8], restaurant: Restaurant) -> String {
         RequestMethod::Post => match handler {
             RequestHandler::Add => match handler_param.len() {
                 2 => {
-                    let tid: u32 = handler_param[0].parse().unwrap();
+                    let table_number: u32 = handler_param[0].parse().unwrap();
                     let item_data: &str = handler_param[1];
-                    return add_item(tid, item_data, restaurant);
+                    return add_item(table_number, item_data, restaurant);
                 }
                 _ => return "wrong handler".to_string(),
             },
@@ -76,9 +76,9 @@ pub fn request_parser(req: &mut [u8], restaurant: Restaurant) -> String {
         RequestMethod::Delete => match handler {
             RequestHandler::Remove => match handler_param.len() {
                 2 => {
-                    let tid: u32 = handler_param[0].parse().unwrap();
+                    let table_number: u32 = handler_param[0].parse().unwrap();
                     let iid: u32 = handler_param[1].parse().unwrap();
-                    return remove_item(tid, iid, restaurant);
+                    return delete_item(table_number, iid, restaurant);
                 }
                 _ => return "wrong handler".to_string(),
             },

@@ -11,7 +11,7 @@ pub struct Restaurant {
 impl Restaurant {
     pub fn new(table_size: usize) -> Self {
         let tables: Vec<TablePtr> = (0..table_size as u32)
-            .map(|tid| Arc::new(Mutex::new(Table::new(tid))))
+            .map(|table_number| Arc::new(Mutex::new(Table::new(table_number))))
             .collect();
 
         Self { tables }

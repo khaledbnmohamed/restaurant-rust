@@ -12,17 +12,17 @@ def test_all(host, port):
 
     try:
         s.connect((host, port))
-        print(f'Connected to {host}:{port}')
+        print(f'✅✅✅ Connected to {host}:{port}')
     except:
-        print(f'Unable to connect {host}:{port}')
+        print(f' ✖️✖️✖️ Unable to connect {host}:{port}')
         exit(1)
 
     print("=== Checking ===")
 
-    for table_id in range(TABLE_AMOUNT):
-        response = send_recv_json(s, f"GET /get/{table_id}".encode())
+    for table_number in range(TABLE_AMOUNT):
+        response = send_recv_json(s, f"GET /get/{table_number}".encode())
         if len(response) != ITEM_AMOUNT * NUM_THREAD:
-            print(f"Table {table_id} has an incorrect amount of items")
+            print(f"Table {table_number} has an incorrect amount of items")
             exit(1)
 
     print("💃💃💃💃💃💃💃 Tables are all correct 💃💃💃💃💃💃💃 ")
@@ -53,17 +53,17 @@ def run_client_add(host, port, thread_id):
 
     try:
         s.connect((host, port))
-        print(f'Connected to {host}:{port}')
+        print(f'✅✅✅ Connected to {host}:{port}')
     except:
-        print(f'Unable to connect {host}:{port}')
+        print(f'✖️✖️✖️ Unable to connect {host}:{port}')
         exit(1)
 
-    for table_id in range(TABLE_AMOUNT):
+    for table_number in range(TABLE_AMOUNT):
         item_id_start = ITEM_AMOUNT * thread_id
         item_id_end = ITEM_AMOUNT * (thread_id + 1)
 
         for item_id in range(item_id_start, item_id_end):
-            send_recv(s, f"POST /add/{table_id}/{item_id}".encode())
+            send_recv(s, f"POST /add/{table_number}/{item_id}".encode())
 
     s.close()
 
